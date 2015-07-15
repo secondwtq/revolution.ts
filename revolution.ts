@@ -6,6 +6,35 @@ enum RevolutionObjectType {
 
 const REVOLUTION_INF : number = 19961208;
 
+class RevolutionRay {
+	
+	constructor (private position : Hector, private velocity : Hector) { }
+	
+	get pos() : Hector {
+		return this.position; }
+	
+	get vel() : Hector {
+		return this.velocity; }
+		
+	get direction() : Hector {
+		return this.vel.nom(); }
+}
+
+function time_to_coll(ray : RevolutionRay, obj : RevolutionBasis) : number {
+	var pos_offset : Hector = Hector.minus(obj.pos, ray.pos);
+	var agent_radsq : number = obj.radius * obj.radius;
+	var time : number;
+	
+	var obs_cr : number = -Math.sqrt(Hector.det(ray.vel, pos_offset)) +
+							agent_radsq * ray.vel.length_sq();
+	if (obs_cr > 0) {
+		time = (Hector.dot(ray.vel, pos_offset) - Math.sqrt(obs_cr)) / ray.vel.length_sq();
+		if (time < 0) {
+			time = REVOLUTION_INF; }
+	} else { time = REVOLUTION_INF; }
+	return time;
+}
+
 class RevolutionBasis {
 	vel : Hector = new Hector(0, 0);
 	parent : RevolutionManager = undefined;

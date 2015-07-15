@@ -31,6 +31,8 @@ class Hector {
 	distance(other : Hector) : number { return Hector.distance(this, other); }
 	distance_sq(other : Hector) : number { return Hector.distance_sq(this, other); }
 	
+	nom() : Hector { return this.divide(this.length()); }
+	
 	static minus(lhs : Hector, rhs : Hector | number) : Hector {
 		if (typeof rhs === 'number') {
 			return new Hector(lhs.x - rhs, lhs.y - rhs);
@@ -41,6 +43,8 @@ class Hector {
 	static length_sq(vec : Hector) : number { return Math.pow(vec.x, 2) + Math.pow(vec.y, 2); }
 	static distance(lhs : Hector, rhs : Hector) : number { return Hector.length(Hector.minus(lhs, rhs)); }
 	static distance_sq(lhs: Hector, rhs : Hector) : number { return Hector.length_sq(Hector.minus(lhs, rhs)); }
+	static det(lhs : Hector, rhs : Hector) : number { return ((lhs.x * rhs.y) - (lhs.y * rhs.x)); }
+	static dot(lhs : Hector, rhs : Hector) : number { return ((lhs.x * rhs.y) + (lhs.y * rhs.x)); }
 	
 	
 }
