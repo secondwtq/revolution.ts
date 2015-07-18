@@ -1,5 +1,11 @@
 /// <reference path="typings/phaser/phaser.d.ts" />
 /// <reference path="collections.ts" />
+/// <reference path="revolution.ts" />
+
+/// <reference path="demo-config.ts" />
+/// <reference path="demo-selection.ts" />
+
+module RevolutionDemo {
 
 var game : Phaser.Game;
 var debug : Phaser.Graphics;
@@ -9,24 +15,6 @@ var obstacles : Phaser.Group;
 
 type Point = Phaser.Point;
 
-var obst_list : { name : string, type : string, radius? : number } [] = [
-	{ name: 'obst1', type: 'default' },
-	{ name: 'obst2', type: 'circle', radius: 24 },
-	{ name: 'obst3', type: 'circle', radius: 12 },
-	{ name: 'obst4', type: 'circle', radius: 32 },
-	{ name: 'obst5', type: 'default' }
-];
-
-var config : {
-	game_size : Point,
-	debug_draw : boolean
-	num_actor : number, num_obst : number
-} = {
-	game_size: new Phaser.Point(1024, 768),
-	debug_draw: false,
-	num_actor: 24, num_obst: 12
-};
-
 module RevUtil {
 	export function random_pt(range : Point) : Point {
 		return new Phaser.Point(Math.random() * range.x, Math.random() * range.y); }
@@ -35,7 +23,7 @@ module RevUtil {
 		return source[Math.floor(Math.random() * source.length)]; }
 }
 
-module RevDebug {
+export module RevDebug {
 	export function line(from : Point, to : Point, color : string) : void {
 		game.debug.geom(new Phaser.Line(from.x, from.y, to.x, to.y), color); }
 	
@@ -43,39 +31,13 @@ module RevDebug {
 		line(org, Phaser.Point.add(org, vec), color); }
 }
 
-interface RevSelectable {
-	on_select() : void;
-	on_deselect() : void;
-}
-
-class RevSelectionMangaer {
-	constructor() { }
-	select_mode() : boolean { return !this.objects.isEmpty(); }
-	
-	clear_selection() : void {
-		this.objects.forEach(element => {
-			element.on_deselect(); return true; });
-		this.objects.clear();
-	}
-	
-	select(obj : RevSelectable) {
-		this.objects.add(obj);
-		obj.on_select();
-	}
-	
-	deselect(obj : RevSelectable) {
-		this.objects.remove(obj);
-		obj.on_deselect();
-	}
-	
-	selection() : collections.Set<RevSelectable> { return this.objects; }
-	
-	private objects : collections.Set<RevSelectable> = new collections.Set<RevSelectable>();
-}
-
 var selection : RevSelectionMangaer;
+var revolution_m : Revolution.RevolutionManager;
 
 class RevolutionSprite extends Phaser.Sprite implements RevSelectable {
+	
+	agent : Revolution.RevolutionBasis;
+	
 	constructor(position : Point, name : string) {
 		super(game, position.x, position.y, name);
 		this.anchor.setTo(0.5, 0.5);
@@ -93,6 +55,7 @@ class RevolutionSprite extends Phaser.Sprite implements RevSelectable {
 	add_to_world() : void {
 		game.physics.p2.enable(this, config.debug_draw);
 		this.body.collideWorldBounds = true;
+		revolution_m.add(this.agent);
 	}
 	
 	on_select() { this.tint = 0xffaaaa; }
@@ -103,8 +66,12 @@ class RevolutionSprite extends Phaser.Sprite implements RevSelectable {
 }
 
 class RevolutionObstacleObject extends RevolutionSprite {
-	constructor(position : Point, image : string) {
+	
+	agent : Revolution.RevolutionObstacle;
+	
+	constructor(position : Point, image : string, radius : number) {
 		super(position, image);
+		this.agent = new Revolution.RevolutionObstacle(radius, new Hector(position.x, position.y));
 	}
 	
 	add_to_world() : void {
@@ -119,10 +86,13 @@ class RevolutionActor extends RevolutionSprite {
 	is_moving : boolean;
 	target : Point;
 	max_speed : number;
+	agent : Revolution.RevolutionAgent;
 	
 	constructor(position : Point) {
 		super(position, 'actor_body');
 		this.max_speed = 72;
+		this.agent = new Revolution.RevolutionAgent(config.actor_radius, new Hector(position.x, position.y));
+		this.agent.max_speed = this.max_speed;
 	}
 	
 	add_to_world() : void {
@@ -139,6 +109,7 @@ class RevolutionActor extends RevolutionSprite {
 		var vel : Point = new Phaser.Point(this.body.velocity.x, this.body.velocity.y);
 		RevDebug.line_to(this.position, vel, 'white');
 		
+		this.agent.update(new Hector(this.position.x, this.position.y), new Hector(this.body.velocity.x, this.body.velocity.y));
 		if (this.is_moving) {
 			if (Phaser.Point.distance(this.target, this.position) < 16) {
 				this.is_moving = false;
@@ -146,11 +117,16 @@ class RevolutionActor extends RevolutionSprite {
 			} else {
 				var force = Phaser.Point.add(this.target, Phaser.Point.negative(this.position));
 				if (force.getMagnitude() > this.max_speed) { force.setMagnitude(this.max_speed); }
+				this.agent.desired(new Hector(force.x, force.y));
 				force = Phaser.Point.add(force, Phaser.Point.negative(this.body.velocity));
 				
 				RevDebug.line_to(this.position, force, 'red');
 				
 				this.body.force.x = force.x, this.body.force.y = force.y;
+				
+				var nvh : Hector = this.agent.new_velocity();
+				var nv_pt : Point = new Phaser.Point(nvh.x, nvh.y);
+				RevDebug.line_to(this.position, nv_pt, 'green');
 			}
 		}
 	}
@@ -203,10 +179,12 @@ window.onload = function () {
 		obstacles.enableBody = true;
 		
 		selection = new RevSelectionMangaer();
+		revolution_m = new Revolution.RevolutionManager();
 		
 		for (var i = 0; i < config.num_obst; i++) {
 			var obst = RevUtil.random_select(obst_list);
-			var obst_object = new RevolutionObstacleObject(RevUtil.random_pt(config.game_size), obst.name);
+			var obst_object = new RevolutionObstacleObject(RevUtil.random_pt(config.game_size),
+					obst.name, obst.agent_radius);
 			obst_object.add_to_world();
 			if (obst.type == 'circle') {
 				obst_object.body.setCircle(obst.radius); }
@@ -216,7 +194,16 @@ window.onload = function () {
 		
 	}
 	
-	game = new Phaser.Game(config.game_size.x, config.game_size.y, Phaser.AUTO, '', {
-		preload: preload, create: create });
+	// game = new Phaser.Game(config.game_size.x, config.game_size.y, Phaser.AUTO, config.canvas_id, {
+	// 	preload: preload, create: create }, false, true);
+	game = new Phaser.Game({
+		width: config.game_size.x, height: config.game_size.y,
+		parent: config.canvas_id,
+		state: { preload: preload, create: create },
+		renderer: Phaser.AUTO,
+		resolution: 1,
+	});
 	
 };
+
+}
