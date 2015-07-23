@@ -46,10 +46,13 @@ function get_time_to_coll_2(obj0 : RevolutionBasis, obj1 : RevolutionBasis, vel 
 export class RevolutionManager {
 	objects : collections.Set<RevolutionBasis> = new collections.Set<RevolutionBasis>();
 	
+	private max_id : number = 0;
+	
 	add (obj : RevolutionBasis) : RevolutionManager {
 		if (obj.parent !== undefined) {
 			obj.parent.remove(obj); }
 		obj.parent = this;
+		this.assign_id(obj);
 		this.objects.add(obj);
 		return this;
 	}
@@ -59,14 +62,20 @@ export class RevolutionManager {
 		this.objects.remove(obj);
 		return this;
 	}
+	
+	assign_id(src : RevolutionBasis) : RevolutionManager {
+		src.id = this.max_id++;
+		return this;
+	}
 }
 
 export class RevolutionBasis {
+	id : number = -1;
 	vel : Hector = new Hector(0, 0);
 	parent : RevolutionManager = undefined;
 	constructor (public radius : number = 1, public pos : Hector = new Hector(0, 0)) { }
 	type () : RevolutionObjectType { return RevolutionObjectType.BASIS; }
-	toString () : string { return collections.makeString(this); }
+	toString () : string { return this.type().toString() + this.id; }
 }
 
 export class RevolutionAgentLocalAvoidanceConf {
@@ -86,17 +95,26 @@ export class RevolutionAgent extends RevolutionBasis {
 	weight_steer_cur : number;
 	weight_steer_des : number;
 	weight_time : number;
+	weight_side : number;
+	
+	is_moving : boolean;
 	
 	private desired_speed : Hector;
+	// private dp : number;
+	// private np : number;
 	
 	constructor(radius : number = 1, pos : Hector = new Hector(0, 0)) {
 		super(radius, pos);
 		this.max_speed = 1;
-		this.num_samples = 256;
-		this.safety_radius = 640;
+		this.num_samples = 128;
+		this.safety_radius = 1024;
+		
 		this.weight_steer_cur = 0.75;
 		this.weight_time = 2.5;
 		this.weight_steer_des = 2.0;
+		this.weight_side = 0.75;
+		
+		this.is_moving = false;
 		
 		this.desired_speed = new Hector(0, 0);
 	}
@@ -108,12 +126,11 @@ export class RevolutionAgent extends RevolutionBasis {
 	}
 	
 	new_velocity() : Hector {
-		
-		var penaltym : number = REVOLUTION_INF;
+		var penaltym : number = 100 * REVOLUTION_INF;
 		var ret : Hector = new Hector(0, 0);
 		
 		var sampler : RevolutionSamplerDefault = new RevolutionSamplerDefault();
-		sampler.setup({ max_speed: this.max_speed, desired: this.desired_speed });
+		sampler.setup({ max_speed: this.max_speed, desired: this.desired_speed, min_speed: this.max_speed / 2 });
 		
 		for (var i = 0; i < this.num_samples; i++) {
 			var vel_sampled : Hector = sampler.sample();
@@ -129,41 +146,55 @@ export class RevolutionAgent extends RevolutionBasis {
 			var min_time_to_coll : number = REVOLUTION_INF;
 			if (this.parent) {
 				this.parent.objects.forEach((obj : RevolutionBasis) => {
-					var time_to_coll : number = REVOLUTION_INF;
-					nside++;
-					// what is 'instanceof' EXECTLY is?
-					if (Hector.distance(obj.pos, this.pos) <= this.safety_radius) {
-						if (obj instanceof RevolutionAgent) {
-							var vel : Hector = Hector.minus(vel_sampled.multiply(2), Hector.plus(this.vel, obj.vel));
+					if (obj !== this) {
+						var time_to_coll : number = REVOLUTION_INF;
+						// what is 'instanceof' EXECTLY is?
+						// if (Hector.distance(obj.pos, this.pos) <= this.safety_radius) {
+							
+							var dpos = Hector.minus(obj.pos, this.pos).nom(); // dp
+							var npos : Hector = new Hector(-dpos.y, dpos.x);
+							var obj_desided_vel : Hector;
+							if (obj instanceof RevolutionAgent) {
+								obj_desided_vel = obj.desired_speed;
+							} else if (obj instanceof RevolutionObstacle) { obj_desided_vel = new Hector(); }
+							var dvel : Hector = Hector.minus(obj_desided_vel, this.desired_speed); // dv
+							var a : number = Hector.triArea(new Hector(0, 0), dpos, dvel);
+							if (a <= 0.01) { npos = npos.multiply(-1); }
+							
+							var vel : Hector;
+							if (obj instanceof RevolutionAgent && obj.is_moving) {
+								vel = Hector.minus(vel_sampled.multiply(2), Hector.plus(this.vel, obj.vel));
+							} else {
+								vel = vel_sampled; }
+	
 							time_to_coll = get_time_to_coll_2(this, obj, vel);
-						} else if (obj instanceof RevolutionObstacle) {
-							time_to_coll = get_time_to_coll_2(this, obj, vel_sampled);
-						}
-					}
-					
-					if (time_to_coll < min_time_to_coll) {
-						min_time_to_coll = time_to_coll;
-						// if (1 / min_time_to_coll >= penaltym) {
-						// 	return false; }
+							side += Hector.clamp(Math.min(Hector.dot(dpos, vel) * 0.5 + 0.5, Hector.dot(npos, vel) * 2), 0, 1);
+							nside++;
+						// }
+						
+						if (time_to_coll < min_time_to_coll) {
+							min_time_to_coll = time_to_coll; }
 					}
 					return true;
-				});
+				}); /* for every object in the scene model */
 			}
 			
-			if (min_time_to_coll !== REVOLUTION_INF) {
-				// RevolutionDemo.RevDebug.line_to(new Phaser.Point(this.pos.x, this.pos.y),
-				// 	new Phaser.Point(vel_sampled.x, vel_sampled.y), "blue");
+			if (min_time_to_coll < REVOLUTION_INF) {
+				RevolutionDemo.RevDebug.line_to(new Phaser.Point(this.pos.x, this.pos.y),
+					new Phaser.Point(vel_sampled.x, vel_sampled.y), "blue");
 			}
 			
-			penalty_time = this.weight_time * (1 / min_time_to_coll);
+			if (nside !== 0) { side /= nside; }
+			penalty_side = this.weight_side * side;
+			penalty_time = this.weight_time * (0.01 + 1 / min_time_to_coll);
 			var penalty : number = penalty_steer_cur + penalty_steer_des + penalty_time + penalty_side;
-			// console.log("sampling speed: ", vel_sampled.x, vel_sampled.y, " penalty ", penalty);
 			if (penalty < penaltym) {
+				// console.log("sampling speed: ", vel_sampled.x, vel_sampled.y, " penalty ", penalty_steer_cur, penalty_steer_des, penalty_time, penalty_side);
 				// console.log("sampling speed: ", vel_sampled.x, vel_sampled.y, " min_time_to_coll ", min_time_to_coll);
 				penaltym = penalty;
 				ret = vel_sampled;
 			}
-		} // for every sample of velocity
+		} /* for every sample of velocity */
 		
 		return ret;
 	}

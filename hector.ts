@@ -28,6 +28,8 @@ class Hector {
 	
 	nom() : Hector { return this.divide(this.len()); }
 	
+	flip() : Hector { return Hector.flip(this); }
+	
 	static plus(lhs : Hector, rhs : Hector | number) : Hector {
 		if (typeof rhs === 'number') {
 			return new Hector(lhs.x + rhs, lhs.y + rhs);
@@ -47,5 +49,26 @@ class Hector {
 	static det(lhs : Hector, rhs : Hector) : number { return ((lhs.x * rhs.y) - (lhs.y * rhs.x)); }
 	static dot(lhs : Hector, rhs : Hector) : number { return ((lhs.x * rhs.x) + (lhs.y * rhs.y)); }
 	
+	static flip(src : Hector) : Hector { return new Hector(src.y, src.x); }
+	
+	static clamp(src : number, min : number, max : number) : number {
+		if (src < min) { return min; }
+		else if (src > max) { return max; }
+		else { return src; }
+	}
+	
+	static triArea(a : Hector, b : Hector, c : Hector) : number {
+		var abx : number = b.x - a.x;
+		var aby : number = b.y - a.y;
+		var acx : number = c.x - a.x;
+		var acy : number = c.y - a.y;
+		return acx * aby - abx * acy;
+		
+		/*
+		var ab : Hector = Hector.minus(b, a);
+		var ac : Hector = Hector.minus(c, a);
+		return Hector.det(ab, ac);
+		*/
+	}
 	
 }

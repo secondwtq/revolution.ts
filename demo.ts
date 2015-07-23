@@ -83,7 +83,6 @@ class RevolutionObstacleObject extends RevolutionSprite {
 
 class RevolutionActor extends RevolutionSprite {
 	
-	is_moving : boolean;
 	target : Point;
 	max_speed : number;
 	agent : Revolution.RevolutionAgent;
@@ -98,11 +97,13 @@ class RevolutionActor extends RevolutionSprite {
 	add_to_world() : void {
 		super.add_to_world();
 		actors.addChild(this);
+		
+		this.body.setCircle(14);
 	}
 	
 	move_to (target : Point) {
-		this.is_moving = true;
 		this.target = target;
+		this.agent.is_moving = true;
 	}
 	
 	update() {
@@ -110,9 +111,9 @@ class RevolutionActor extends RevolutionSprite {
 		RevDebug.line_to(this.position, vel, 'white');
 		
 		this.agent.update(new Hector(this.position.x, this.position.y), new Hector(this.body.velocity.x, this.body.velocity.y));
-		if (this.is_moving) {
+		if (this.agent.is_moving) {
 			if (Phaser.Point.distance(this.target, this.position) < 16) {
-				this.is_moving = false;
+				this.agent.is_moving = false;
 				this.body.velocity.x = this.body.velocity.y = 0;
 			} else {
 				var force = Phaser.Point.add(this.target, Phaser.Point.negative(this.position));
@@ -122,11 +123,14 @@ class RevolutionActor extends RevolutionSprite {
 				
 				RevDebug.line_to(this.position, force, 'red');
 				
-				this.body.force.x = force.x, this.body.force.y = force.y;
-				
 				var nvh : Hector = this.agent.new_velocity();
 				var nv_pt : Point = new Phaser.Point(nvh.x, nvh.y);
 				RevDebug.line_to(this.position, nv_pt, 'green');
+				
+				var force_new = Hector.minus(nvh, new Hector(this.body.velocity.x, this.body.velocity.y));
+				force = new Phaser.Point(force_new.x, force_new.y);
+				
+				this.body.force.x = force.x, this.body.force.y = force.y;
 			}
 		}
 	}
