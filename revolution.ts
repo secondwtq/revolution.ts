@@ -69,6 +69,24 @@ export class RevolutionManager {
 	}
 }
 
+class RevolutionRay {
+	
+	constructor (private position : Hector, private velocity : Hector) { }
+	
+	get pos() : Hector {
+		return this.position; }
+	
+	get vel() : Hector {
+		return this.velocity; }
+		
+	get direction() : Hector {
+		return this.vel.nom(); }
+}
+
+function intersectTestRaySegment(rayPos : RevolutionRay, segment : RevolutionSegment) : number {
+	
+}
+
 export class RevolutionBasis {
 	id : number = -1;
 	vel : Hector = new Hector(0, 0);
@@ -179,10 +197,12 @@ export class RevolutionAgent extends RevolutionBasis {
 				}); /* for every object in the scene model */
 			}
 			
+			/*
 			if (min_time_to_coll < REVOLUTION_INF) {
 				RevolutionDemo.RevDebug.line_to(new Phaser.Point(this.pos.x, this.pos.y),
 					new Phaser.Point(vel_sampled.x, vel_sampled.y), "blue");
 			}
+			*/
 			
 			if (nside !== 0) { side /= nside; }
 			penalty_side = this.weight_side * side;
@@ -200,10 +220,29 @@ export class RevolutionAgent extends RevolutionBasis {
 	}
 }
 
+export class RevolutionSegment {
+	constructor(ep1 : Hector, ep2 : Hector) {
+		this.construct(ep1, ep2); }
+	
+	construct(ep1 : Hector, ep2 : Hector) : RevolutionSegment {
+		this.endpoints = new Array<Hector>();
+		this.endpoints.push(ep1.clone());
+		this.endpoints.push(ep2.clone());
+		return this;
+	}
+	
+	public endpoints : Hector[];
+}
+
 export class RevolutionObstacle extends RevolutionBasis {
 	constructor(radius : number = 1, pos : Hector = new Hector(0, 0)) {
 		super(radius, pos); }
 	type () : RevolutionObjectType { return RevolutionObjectType.OBSTACLE; }
+	
+	obstacle_type () : RevolutionObstacleType { return this.obs_type; }
+	private obs_type : RevolutionObstacleType = RevolutionObstacleType.CIRCLE;
+	
+	public segments : RevolutionSegment[];
 }
 
 }

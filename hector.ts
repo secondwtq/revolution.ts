@@ -29,6 +29,7 @@ class Hector {
 	nom() : Hector { return this.divide(this.len()); }
 	
 	flip() : Hector { return Hector.flip(this); }
+	clone() : Hector { return Hector.clone(this); }
 	
 	static plus(lhs : Hector, rhs : Hector | number) : Hector {
 		if (typeof rhs === 'number') {
@@ -48,6 +49,8 @@ class Hector {
 	static distance_sq(lhs: Hector, rhs : Hector) : number { return Hector.length_sq(Hector.minus(lhs, rhs)); }
 	static det(lhs : Hector, rhs : Hector) : number { return ((lhs.x * rhs.y) - (lhs.y * rhs.x)); }
 	static dot(lhs : Hector, rhs : Hector) : number { return ((lhs.x * rhs.x) + (lhs.y * rhs.y)); }
+	
+	static clone(src : Hector) : Hector { return new Hector(src.x, src.y); }
 	
 	static flip(src : Hector) : Hector { return new Hector(src.y, src.x); }
 	
