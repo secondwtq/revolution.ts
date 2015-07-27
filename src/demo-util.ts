@@ -1,4 +1,4 @@
-/// <reference path="typings/phaser/phaser.d.ts" />
+/// <reference path="../typings/phaser/phaser.d.ts" />
 
 /// <reference path="demo.ts" />
 

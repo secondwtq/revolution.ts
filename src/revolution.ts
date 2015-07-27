@@ -1,5 +1,5 @@
 /// <reference path="hector.ts" />
-/// <reference path="collections.ts" />
+/// <reference path="../assets/external/collections.ts" />
 
 /// <reference path="rev-common.ts" />
 /// <reference path="rev-sampler.ts" />

@@ -1,4 +1,4 @@
-/// <reference path="collections.ts" />
+/// <reference path="../assets/external/collections.ts" />
 
 module RevolutionDemo {
 export module Selection {

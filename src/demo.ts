@@ -1,5 +1,5 @@
-/// <reference path="typings/phaser/phaser.d.ts" />
-/// <reference path="collections.ts" />
+/// <reference path="../typings/phaser/phaser.d.ts" />
+/// <reference path="../assets/external/collections.ts" />
 /// <reference path="revolution.ts" />
 
 /// <reference path="demo-config.ts" />
