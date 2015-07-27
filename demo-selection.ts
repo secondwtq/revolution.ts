@@ -1,13 +1,14 @@
 /// <reference path="collections.ts" />
 
 module RevolutionDemo {
+export module Selection {
 
-export interface RevSelectable {
+export interface Selectable {
 	on_select() : void;
 	on_deselect() : void;
 }
 
-export class RevSelectionMangaer {
+export class Mangaer {
 	constructor() { }
 	select_mode() : boolean { return !this.objects.isEmpty(); }
 	
@@ -17,19 +18,20 @@ export class RevSelectionMangaer {
 		this.objects.clear();
 	}
 	
-	select(obj : RevSelectable) {
+	select(obj : Selectable) {
 		this.objects.add(obj);
 		obj.on_select();
 	}
 	
-	deselect(obj : RevSelectable) {
+	deselect(obj : Selectable) {
 		this.objects.remove(obj);
 		obj.on_deselect();
 	}
 	
-	selection() : collections.Set<RevSelectable> { return this.objects; }
+	selection() : collections.Set<Selectable> { return this.objects; }
 	
-	private objects : collections.Set<RevSelectable> = new collections.Set<RevSelectable>();
+	private objects : collections.Set<Selectable> = new collections.Set<Selectable>();
 }
 
+}
 }

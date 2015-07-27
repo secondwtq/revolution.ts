@@ -4,10 +4,11 @@
 
 /// <reference path="demo-config.ts" />
 /// <reference path="demo-selection.ts" />
+/// <reference path="demo-util.ts" />
 
 module RevolutionDemo {
 
-var game : Phaser.Game;
+export var game : Phaser.Game;
 var debug : Phaser.Graphics;
 
 var actors : Phaser.Group;
@@ -15,26 +16,10 @@ var obstacles : Phaser.Group;
 
 type Point = Phaser.Point;
 
-module RevUtil {
-	export function random_pt(range : Point) : Point {
-		return new Phaser.Point(Math.random() * range.x, Math.random() * range.y); }
+var selection : Selection.Mangaer;
+var revolution_m : Revolution.Manager;
 
-	export function random_select<T>(source : T[]) : T {
-		return source[Math.floor(Math.random() * source.length)]; }
-}
-
-export module RevDebug {
-	export function line(from : Point, to : Point, color : string) : void {
-		game.debug.geom(new Phaser.Line(from.x, from.y, to.x, to.y), color); }
-	
-	export function line_to(org : Point, vec : Point, color : string) : void {
-		line(org, Phaser.Point.add(org, vec), color); }
-}
-
-var selection : RevSelectionMangaer;
-var revolution_m : Revolution.RevolutionManager;
-
-class RevolutionSprite extends Phaser.Sprite implements RevSelectable {
+class RevSprite extends Phaser.Sprite implements Selection.Selectable {
 	
 	agent : Revolution.RevolutionBasis;
 	
@@ -65,13 +50,13 @@ class RevolutionSprite extends Phaser.Sprite implements RevSelectable {
 	toString() { return collections.makeString(this); }
 }
 
-class RevolutionObstacleObject extends RevolutionSprite {
+class Obstacle extends RevSprite {
 	
-	agent : Revolution.RevolutionObstacle;
+	agent : Revolution.Obstacle;
 	
 	constructor(position : Point, image : string, radius : number) {
 		super(position, image);
-		this.agent = new Revolution.RevolutionObstacle(radius, new Hector(position.x, position.y));
+		this.agent = new Revolution.Obstacle(radius, new Hector(position.x, position.y));
 	}
 	
 	add_to_world() : void {
@@ -81,16 +66,16 @@ class RevolutionObstacleObject extends RevolutionSprite {
 	}
 }
 
-class RevolutionActor extends RevolutionSprite {
+class Actor extends RevSprite {
 	
 	target : Point;
 	max_speed : number;
-	agent : Revolution.RevolutionAgent;
+	agent : Revolution.Agent;
 	
 	constructor(position : Point) {
 		super(position, 'actor_body');
 		this.max_speed = 72;
-		this.agent = new Revolution.RevolutionAgent(config.actor_radius, new Hector(position.x, position.y));
+		this.agent = new Revolution.Agent(config.actor_radius, new Hector(position.x, position.y));
 		this.agent.max_speed = this.max_speed;
 	}
 	
@@ -108,7 +93,7 @@ class RevolutionActor extends RevolutionSprite {
 	
 	update() {
 		var vel : Point = new Phaser.Point(this.body.velocity.x, this.body.velocity.y);
-		RevDebug.line_to(this.position, vel, 'white');
+		Debug.line_to(this.position, vel, 'white');
 		
 		this.agent.update(new Hector(this.position.x, this.position.y), new Hector(this.body.velocity.x, this.body.velocity.y));
 		if (this.agent.is_moving) {
@@ -121,11 +106,11 @@ class RevolutionActor extends RevolutionSprite {
 				this.agent.desired(new Hector(force.x, force.y));
 				force = Phaser.Point.add(force, Phaser.Point.negative(this.body.velocity));
 				
-				RevDebug.line_to(this.position, force, 'red');
+				Debug.line_to(this.position, force, 'red');
 				
-				var nvh : Hector = this.agent.new_velocity();
+				var nvh : Hector = this.agent.newVelocity();
 				var nv_pt : Point = new Phaser.Point(nvh.x, nvh.y);
-				RevDebug.line_to(this.position, nv_pt, 'green');
+				Debug.line_to(this.position, nv_pt, 'green');
 				
 				var force_new = Hector.minus(nvh, new Hector(this.body.velocity.x, this.body.velocity.y));
 				force = new Phaser.Point(force_new.x, force_new.y);
@@ -166,7 +151,7 @@ window.onload = function () {
 			if (game.input.mouse.button === Phaser.Mouse.LEFT_BUTTON) {
 				if (selection.select_mode()) {
 					selection.selection().forEach(actor => {
-						if (actor instanceof RevolutionActor) {
+						if (actor instanceof Actor) {
 							actor.move_to(new Phaser.Point(game.input.x, game.input.y)); }
 						return true;
 					});
@@ -182,19 +167,19 @@ window.onload = function () {
 		obstacles = game.add.group();
 		obstacles.enableBody = true;
 		
-		selection = new RevSelectionMangaer();
-		revolution_m = new Revolution.RevolutionManager();
+		selection = new Selection.Mangaer();
+		revolution_m = new Revolution.Manager();
 		
 		for (var i = 0; i < config.num_obst; i++) {
-			var obst = RevUtil.random_select(obst_list);
-			var obst_object = new RevolutionObstacleObject(RevUtil.random_pt(config.game_size),
+			var obst = Utility.random_select(obst_list);
+			var obst_object = new Obstacle(Utility.random_pt(config.game_size),
 					obst.name, obst.agent_radius);
 			obst_object.add_to_world();
 			if (obst.type == 'circle') {
 				obst_object.body.setCircle(obst.radius); }
 		}
 		for (var i = 0; i < config.num_actor; i++) {
-			(new RevolutionActor(RevUtil.random_pt(config.game_size))).add_to_world(); }
+			(new Actor(Utility.random_pt(config.game_size))).add_to_world(); }
 		
 	}
 	

@@ -1,8 +1,8 @@
-/// <reference path="typings/phaser/phaser.d.ts" />
+/// <reference path="demo-exportsdef.ts" />
 
 module RevolutionDemo {
 
-export var obst_list : { name : string, type : string, radius? : number, agent_radius : number } [] = [
+export var obst_list : Exports.ObstacleConfig[] = [
 	// { name: 'obst1', type: 'default', agent_radius: 72 },
 	// { name: 'obst2', type: 'circle', radius: 24, agent_radius: 24 },
 	// { name: 'obst3', type: 'circle', radius: 12, agent_radius: 12 },
@@ -10,17 +10,11 @@ export var obst_list : { name : string, type : string, radius? : number, agent_r
 	{ name: 'obst5', type: 'default', agent_radius: 96 }
 ];
 
-export var config : {
-	game_size : Phaser.Point,
-	debug_draw : boolean
-	num_actor : number, num_obst : number,
-	actor_radius : number,
-	canvas_id : string
-} = {
+export var config : Exports.Config = {
 	game_size: new Phaser.Point(1024, 768),
 	debug_draw: false,
 	num_actor: 2, num_obst: 4,
-	actor_radius: 16,
+	actor_radius: 20,
 	canvas_id: 'demo-canvas'
 };
 

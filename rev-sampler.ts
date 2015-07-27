@@ -1,17 +1,18 @@
 /// <reference path="hector.ts" />
 
 module Revolution {
+export module Sampler {
 	
-export interface RevolutionSamplerInterface {
-	setup (params : any) : RevolutionSamplerInterface;
+export interface Interface {
+	setup (params : any) : Interface;
 	sample () : Hector;
-	reset (params? : any) : RevolutionSamplerInterface;
+	reset (params? : any) : Interface;
 }
 
-export class RevolutionSamplerDefault implements RevolutionSamplerInterface {
+export class Default implements Interface {
 	constructor () { }
 	
-	setup (params : { max_speed : number, desired : Hector, min_speed : number }) : RevolutionSamplerInterface {
+	setup (params : { max_speed : number, desired : Hector, min_speed : number }) : Interface {
 		return this.reset(params); }
 	
 	sample () : Hector {
@@ -25,7 +26,7 @@ export class RevolutionSamplerDefault implements RevolutionSamplerInterface {
 		return ret.multiplyS(this.max_speed);
 	}
 	
-	reset (params? : { max_speed : number, desired : Hector, min_speed : number }) : RevolutionSamplerInterface {
+	reset (params? : { max_speed : number, desired : Hector, min_speed : number }) : Interface {
 		if (params) {
 			this.max_speed = params.max_speed;
 			this.desired_speed = params.desired;
@@ -40,5 +41,6 @@ export class RevolutionSamplerDefault implements RevolutionSamplerInterface {
 	private sample_idx : number;
 	private min_ratio : number;
 }
-	
+
+}	
 }
