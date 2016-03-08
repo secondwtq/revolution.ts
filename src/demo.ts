@@ -124,14 +124,14 @@ class Actor extends RevSprite {
 window.onload = function () {
 	
 	function preload () : void {
-		game.load.image('test_image', '/assets/images/test_image.png');
-		game.load.image('actor_body', '/assets/images/actor.png');
+		game.load.image('test_image', '../assets/images/test_image.png');
+		game.load.image('actor_body', '../assets/images/actor.png');
 		
-		game.load.image('obst1', '/assets/images/obst1.png');
-		game.load.image('obst2', '/assets/images/obst2.png');
-		game.load.image('obst3', '/assets/images/obst3.png');
-		game.load.image('obst4', '/assets/images/obst4.png');
-		game.load.image('obst5', '/assets/images/obst5.png');
+		game.load.image('obst1', '../assets/images/obst1.png');
+		game.load.image('obst2', '../assets/images/obst2.png');
+		game.load.image('obst3', '../assets/images/obst3.png');
+		game.load.image('obst4', '../assets/images/obst4.png');
+		game.load.image('obst5', '../assets/images/obst5.png');
 	}
 	
 	function create () : void {
