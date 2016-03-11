@@ -1,7 +1,10 @@
 {
   "name": "revolution.ts",
   "version": "0.1.0",
-  "devDependencies": {
-    
+  "devDependencies": {},
+  "dependencies": {
+    "gulp": "^3.9.1",
+    "gulp-tsb": "^1.10.2",
+    "typescript": "^1.8.7"
   }
 }

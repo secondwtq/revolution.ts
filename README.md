@@ -2,7 +2,7 @@
 
 RVO (Reciprocal Velocity Obstacles) obstacle avoidance algorithm demo In Browser.
 
-[See it in action.](https://too-young.me/static/public/revolution.ts/src)
+[See it in action.](https://too-young.me/static/public/revolution.ts)
 
 ---
 
